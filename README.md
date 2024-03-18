@@ -1,6 +1,6 @@
 # Serviceworkers in iOS Safari
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) demonstrating some neat Service Worker features now avauilable in iOS Safari (>=17.0.1), inlcuding:
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) demonstrating some neat Service Worker features now avauilable in iOS Safari (>=16.4), inlcuding:
 - Push Notifications (new!)
 - Geolocation (not new!)
 - Local storage (not new!)
