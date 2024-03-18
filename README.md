@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Serviceworkers in iOS Safari
+
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) demonstrating some neat Service Worker features now avauilable in iOS Safari (>=17.0.1), inlcuding:
+- Push Notifications (new!)
+- Geolocation (not new!)
+- Local storage (not new!)
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and start the dev server:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+yarn && yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Script / Set Up
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- Create the base nextjs app: `npx create-next-app@latest` (do not include `src` directory)
+- Add service worker dependencies: `yarn add @serwist/sw @serwist/next`
+- Create a new file `app/sw.ts`
+```typescript
+import { defaultCache } from "@serwist/next/browser";
+import type { PrecacheEntry } from "@serwist/precaching";
+import { installSerwist } from "@serwist/sw";
+
+declare const self: ServiceWorkerGlobalScope & {
+  // Change this attribute's name to your `injectionPoint`.
+  // `injectionPoint` is an InjectManifest option.
+  // See https://serwist.pages.dev/docs/build/inject-manifest/configuring
+  __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+};
+
+installSerwist({
+  precacheEntries: self.__SW_MANIFEST,
+  skipWaiting: true,
+  clientsClaim: true,
+  navigationPreload: true,
+  runtimeCaching: defaultCache,
+});
+```
+- Add `public/manifest.json`
+```json
+{
+"id": "/",
+"theme_color": "#000",
+"background_color": "#f8fafc",
+"display": "standalone",
+"scope": "/",
+"start_url": "/",
+"name": "Progressive Web App Safari",
+"short_name": "PWA Safari",
+"description": "An app demonstrating PWA features in Safari",
+"icons": [
+  ]
+}
+```
+- Configure the service worker in `next.config.mjs:
+```javascript
+import withSerwistInit from "@serwist/next";
+      
+const withSerwist = withSerwistInit({
+    swSrc: "app/sw.ts",
+    swDest: "public/sw.js",
+    register: false,
+    cacheOnFrontEndNav: true,
+});
+         
+export default withSerwist({
+    // Your Next.js config
+    env: {
+        // Client env variables go here
+    },
+});
+```
+- Restart dev server
+-
 
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- [Progressive Web Apps](https://web.dev/explore/progressive-web-apps) - intro to PWAs
+- [Service Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) - general Service Worker topics.
+- [Web Push for Web Apps on iOS and iPadOS](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/) - learn about Web Push for iOS & iPadOS.
+- [Safari Push Notifications](https://developer.apple.com/notifications/safari-push-notifications/) - Overview of push notifications for Safari.
+- [Serwist](https://github.com/serwist/serwist)

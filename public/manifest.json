@@ -1,0 +1,13 @@
+{
+"id": "/",
+"theme_color": "#000",
+"background_color": "#f8fafc",
+"display": "standalone",
+"scope": "/",
+"start_url": "/",
+"name": "Progressive Web App Safari",
+"short_name": "PWA Safari",
+"description": "An app demonstrating PWA features in Safari",
+"icons": [
+  ]
+}
