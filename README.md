@@ -19,6 +19,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 - Create the base nextjs app: `npx create-next-app@latest` (do not include `src` directory)
 - Add service worker dependencies: `yarn add @serwist/sw @serwist/next`
+- Add serwist types to `tscongif.json`
+```json
+    "types": [
+      // Other types...
+      // This allows Serwist to type `window.serwist`.
+      "@serwist/next/typings"
+    ],
+```
 - Create a new file `app/sw.ts`
 ```typescript
 import { defaultCache } from "@serwist/next/browser";
@@ -40,22 +48,6 @@ installSerwist({
   runtimeCaching: defaultCache,
 });
 ```
-- Add `public/manifest.json`
-```json
-{
-"id": "/",
-"theme_color": "#000",
-"background_color": "#f8fafc",
-"display": "standalone",
-"scope": "/",
-"start_url": "/",
-"name": "Progressive Web App Safari",
-"short_name": "PWA Safari",
-"description": "An app demonstrating PWA features in Safari",
-"icons": [
-  ]
-}
-```
 - Configure the service worker in `next.config.mjs:
 ```javascript
 import withSerwistInit from "@serwist/next";
@@ -74,8 +66,100 @@ export default withSerwist({
     },
 });
 ```
+- Add `public/manifest.json`. See [Making PWAs installable](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) for more on required properties.
+```json
+{
+"id": "/",
+"theme_color": "#000",
+"background_color": "#f8fafc",
+"display": "standalone",
+"scope": "/",
+"start_url": "/",
+"name": "Progressive Web App Safari",
+"short_name": "PWA Safari",
+"description": "An app demonstrating PWA features in Safari",
+"icons": [
+      {
+        "src": "/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+  ]
+}
+```
+- Add metadata to `layout.tsx`
+```typescript
+const APP_NAME = "PWA App";
+const APP_DEFAULT_TITLE = "Safari PWA App";
+const APP_TITLE_TEMPLATE = "%s - PWA App";
+const APP_DESCRIPTION = "PWA app featuring APIs newly added in Safari";
+
+export const metadata: Metadata = {
+  applicationName: APP_NAME,
+  title: {
+    default: APP_DEFAULT_TITLE,
+    template: APP_TITLE_TEMPLATE,
+  },
+  description: APP_DESCRIPTION,
+  manifest: "/manifest.json",
+  [...]
+}
+```
 - Restart dev server
--
+- Open browser tools and observe the 'Application" panel. Under "Service workers", ensure "Bypass for network" is checked to ensure latest is always served from local dev server.
+- In `page,tsx`, add `use client` header and add service worker registraion in a `useEffect`
+```typescript
+      window.serwist.register()
+        .then((result: any) => setRegistration(result))
+        .catch((err: any) => alert(err)).catch((err: Error) => console.warn(err))
+```
+- Add service worker feature check/helpers
+```typescript
+export const isNotifySupported = () => {
+    return "serviceWorker" in navigator && "Notification" in window && "PushManager" in window;
+}
+
+export const isGeoSupported = () => {
+    return "serviceWorker" in navigator && "geolocation" in navigator;
+}
+
+export const isStorageSupported = () => {
+    return "serviceWorker" in navigator && "storage" in navigator;
+}
+```
+- Add push notification function
+```typescript
+      const options = {
+        body: `New message from ${result.name.first} ${result.name.last}`,
+        title: `PWA Safari - ${count + 1}`,
+        icon: result.picture.thumbnail,
+        actions: [
+          {
+            action: "open",
+            title: "Open the app",
+          }
+        ]
+      };
+
+      // You must use the service worker notification to show the notification
+      // e.g - new Notification(notifTitle, options) does not work on iOS
+      // despite working on other platforms
+      await registration.showNotification("PWa Safari", options);
+
+      // Set the badge count
+      setCount(count + 1)
+```
+- Add "clear badge count" function
+```typescript
+    // clear app badge
+    navigator.clearAppBadge();
+
+    // close notifcations (where supported)
+    await registration?.getNotifications().then((notifications) => { notifications.forEach((notification) => notification.close()) });
+```
+- Add geolocation function (TODO)
+- Add storage function (TODO)
 
 ## Learn More
 
@@ -85,4 +169,4 @@ To learn more about Next.js, take a look at the following resources:
 - [Service Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) - general Service Worker topics.
 - [Web Push for Web Apps on iOS and iPadOS](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/) - learn about Web Push for iOS & iPadOS.
 - [Safari Push Notifications](https://developer.apple.com/notifications/safari-push-notifications/) - Overview of push notifications for Safari.
-- [Serwist](https://github.com/serwist/serwist)
+- [Serwist](https://github.com/serwist/serwist) - a Service Worker javascript library

@@ -2,7 +2,128 @@
 
 import Image from "next/image";
 
+import { isNotifySupported, isGeoSupported, isStorageSupported } from "./swSupport";
+import { useEffect, useState } from "react";
+
 export default function Home() {
+  const [count, setCount] = useState(0);
+
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [isPwaSupported, setIsPwaSupported] = useState(false);
+  const [isPushGranted, setIsPushGranted] = useState(false)
+
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    // Check if all the features we want are available
+    // In practice, it is better to check for each feature separately and allow users to opt-in 
+    // to each feature on demand.
+    const hasRequisite = isNotifySupported() && isGeoSupported() && isStorageSupported();
+    setIsPwaSupported(hasRequisite);
+
+    if (window.serwist !== undefined && hasRequisite) {
+      try {
+        setIsPushGranted(Notification.permission === "granted")
+      } catch (err) {
+        console.info(err)
+      }
+
+      const beforeinstallprompt = (event: any) => {
+        console.log("Before install prompt: ", event);
+      }
+
+      const appinstalled = (event: any) => {
+        console.log("App installed: ", event);
+      }
+
+      // Register the service worker
+      window.serwist.register()
+        .then((result: any) => setRegistration(result))
+        .catch((err: any) => alert(err)).catch((err: Error) => console.warn(err))
+
+      window.addEventListener("beforeinstallprompt", beforeinstallprompt);
+      window.addEventListener("appinstalled", appinstalled);
+
+      return () => {
+        window.removeEventListener("beforeinstallprompt", beforeinstallprompt);
+        window.removeEventListener("appinstalled", appinstalled);
+      }
+    } else {
+      console.warn("Serwist is not available or the requisite features are not available")
+    }
+  }, []);
+
+  useEffect(() => {
+    console.info("Service worker registration state: ", registration?.active?.state)
+    setIsAppInstalled(registration?.active?.state === "activated")
+  }, [registration?.active?.state])
+
+  useEffect(() => {
+    navigator.setAppBadge && navigator.setAppBadge(count)
+  }, [count])
+
+  const requestPermission = () => {
+    try {
+      if (isPwaSupported)
+        Notification.requestPermission().then((result) => {
+          if (result === "granted") {
+            setIsPushGranted(true);
+          } else {
+            alert("We weren't allowed to send you notifications. Permission state is: " + result);
+          }
+        })
+      else {
+        // Alert the user that they need to install the web page to use notifications 
+        alert('You need to install this web page to use notifications');
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  const randomNotification = async () => {
+    if (!registration) return
+
+    try {
+      const result = await fetch("https://randomuser.me/api/?nat=us,fr,gb,mx,in")
+        .then((response) => response.json())
+        .then((data) => data.results[0]);
+
+      const options = {
+        body: `New message from ${result.name.first} ${result.name.last}`,
+        title: `PWA Safari - ${count + 1}`,
+        icon: result.picture.thumbnail,
+        actions: [
+          {
+            action: "open",
+            title: "Open the app",
+          }
+        ]
+      };
+
+      // You must use the service worker notification to show the notification
+      // e.g - new Notification(notifTitle, options) does not work on iOS
+      // despite working on other platforms
+      await registration.showNotification("Message", options);
+
+      // Set the badge count
+      setCount(count + 1)
+    } catch (err: any) {
+      console.log("Encountered a problem: " + err.message)
+      console.log(err)
+      alert(err)
+    }
+  }
+
+  const clearNotifications = async () => {
+    // clear app badge
+    navigator.clearAppBadge();
+    setCount(0);
+
+    // close notifcations (where supported)
+    await registration?.getNotifications().then((notifications) => { notifications.forEach((notification) => notification.close()) });
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
@@ -30,85 +151,83 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
       <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+        {!isPwaSupported && (<button
           className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
+            Install{" "}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
               -&gt;
             </span>
           </h2>
           <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
+            Install this page as an app to get started
           </p>
-        </a>
+        </button>)}
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+
+        {!isPushGranted && (
+          <button
+            className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+            onClick={() => requestPermission()}
+          >
+            <h2 className={`mb-3 text-2xl font-semibold`}>
+              Push{" "}
+              <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+                -&gt;
+              </span>
+            </h2>
+            <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+              Enable Push Notifications
+            </p>
+          </button>)}
+
+        {isAppInstalled && (<button
           className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
+            Installed{" "}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
+              ✔
             </span>
           </h2>
           <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
+            Service worker is registered.
           </p>
-        </a>
+        </button>)}
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+        {isPushGranted && (
+          <button
+            className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+            onClick={() => randomNotification()}
+          >
+            <h2 className={`mb-3 text-2xl font-semibold`}>
+              Push{" "}
+              <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+                ✔
+              </span>
+            </h2>
+            <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+              Test Push Notifications
+            </p>
+          </button>)}
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+        {isPushGranted && (
+          <button
+            className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+            onClick={() => clearNotifications()}
+          >
+            <h2 className={`mb-3 text-2xl font-semibold`}>
+              Push{" "}
+              <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+                ✔
+              </span>
+            </h2>
+            <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+              Clear Badge Counter
+            </p>
+          </button>)}
       </div>
     </main>
   );
