@@ -3,14 +3,16 @@
 import Image from "next/image";
 
 import { isNotifySupported, isGeoSupported, isStorageSupported } from "./swSupport";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 export default function Home() {
   const [count, setCount] = useState(0);
 
   const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [isPwaSupported, setIsPwaSupported] = useState(false);
-  const [isPushGranted, setIsPushGranted] = useState(false)
+  const [isPushGranted, setIsPushGranted] = useState(false);
+
+  const [currentGeo, setCurrentGeo] = useState<GeolocationPosition | null>(null);
 
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
@@ -140,12 +142,25 @@ export default function Home() {
     await registration?.getNotifications().then((notifications) => { notifications.forEach((notification) => notification.close()) });
   }
 
+  const requestCurrentPosition = async () => {
+    if (isGeoSupported()) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        console.log(position.coords.latitude, position.coords.longitude);
+        setCurrentGeo(position);
+      })
+    } else {
+      console.warn("Geolocation is not supported")
+    }
+
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
         <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
+          {currentGeo && (
+            <code className="font-mono font-bold w-100">{currentGeo.coords.latitude}, {currentGeo.coords.longitude}</code>
+          )}
         </p>
         <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
           <a
@@ -244,6 +259,21 @@ export default function Home() {
               Clear Badge Counter
             </p>
           </button>)}
+
+        {isAppInstalled && isGeoSupported() && (<button
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          onClick={() => requestCurrentPosition()}
+        >
+          <h2 className={`mb-3 text-2xl font-semibold`}>
+            Geolocation{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              ✔
+            </span>
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+            Get current coordinates.
+          </p>
+        </button>)}
       </div>
     </main>
   );
