@@ -158,6 +158,22 @@ export const isStorageSupported = () => {
     // close notifcations (where supported)
     await registration?.getNotifications().then((notifications) => { notifications.forEach((notification) => notification.close()) });
 ```
+- Add a function to subscribe to remote notifications
+```typescript
+            const pm = await registration?.pushManager?.permissionState()
+            if (pm === "granted")
+              // https://developer.mozilla.org/en-US/docs/Web/API/PushManager
+              // Requires HTTPS and a valid service worker to receive push notifications
+              registration?.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: "HELLOWORLD",
+              }).then((subscription) => {
+                console.log(subscription.endpoint);
+                // The push subscription details needed by the application
+                // server are now available, and can be sent to it using,
+                // for example, the fetch() API.
+              }, (err) => console.warn(err))
+```
 - Add geolocation function (TODO)
 - Add storage function (TODO)
 
