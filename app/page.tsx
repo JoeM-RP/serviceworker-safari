@@ -13,6 +13,7 @@ export default function Home() {
   const [isPushGranted, setIsPushGranted] = useState(false);
 
   const [currentGeo, setCurrentGeo] = useState<GeolocationPosition | null>(null);
+  const [secretText, setSecretText] = useState<string>();
 
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
@@ -58,6 +59,8 @@ export default function Home() {
   useEffect(() => {
     console.info("Service worker registration state: ", registration?.active?.state)
     setIsAppInstalled(registration?.active?.state === "activated")
+
+    setServiceStorage()
   }, [registration?.active?.state])
 
   useEffect(() => {
@@ -151,7 +154,28 @@ export default function Home() {
     } else {
       console.warn("Geolocation is not supported")
     }
+  }
 
+  const setServiceStorage = async () => {
+    if (isStorageSupported()) {
+      navigator.storage.persist().then((persistent) => {
+        if (persistent) {
+          console.log("Storage will not be cleared except by explicit user action");
+        } else {
+          console.log("Storage may be cleared by the UA under storage pressure.");
+        }
+      })
+      // Service worker is not required to use localStorage
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+      localStorage.setItem("Test", "it's a secret to everybody")
+    } else {
+      console.warn("Storage is not supported")
+    }
+  }
+
+  const getServiceStorage = async () => {
+    const saved = localStorage.getItem('Test');
+    if (saved) setSecretText(saved)
   }
 
   return (
@@ -228,7 +252,7 @@ export default function Home() {
           </p>
         </button>)}
 
-        {isPushGranted && (
+        {isAppInstalled && isPushGranted && (
           <button
             className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
             onClick={() => randomNotification()}
@@ -244,7 +268,7 @@ export default function Home() {
             </p>
           </button>)}
 
-        {isPushGranted && (
+        {isAppInstalled && isPushGranted && (
           <button
             className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
             onClick={() => clearNotifications()}
@@ -265,13 +289,28 @@ export default function Home() {
           onClick={() => requestCurrentPosition()}
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
-            Geolocation{" "}
+            Location{" "}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
               ✔
             </span>
           </h2>
           <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
             Get current coordinates.
+          </p>
+        </button>)}
+
+        {isAppInstalled && isStorageSupported() && (<button
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          onClick={() => getServiceStorage()}
+        >
+          <h2 className={`mb-3 text-2xl font-semibold`}>
+            Storage{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              ✔
+            </span>
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+            Reveal a storage entry.
           </p>
         </button>)}
       </div>

@@ -107,13 +107,13 @@ export const metadata: Metadata = {
 }
 ```
 - Restart dev server
-- Open browser tools and observe the 'Application" panel. Under "Service workers", ensure "Bypass for network" is checked to ensure latest is always served from local dev server.
 - In `page,tsx`, add `use client` header and add service worker registraion in a `useEffect`
 ```typescript
       window.serwist.register()
         .then((result: any) => setRegistration(result))
         .catch((err: any) => alert(err)).catch((err: Error) => console.warn(err))
 ```
+- Open browser tools and observe the 'Application" panel. Under "Service workers", observe that there is now a service worker registered. Ensure "Bypass for network" is checked to ensure latest is always served from local dev server.
 - Add service worker feature check/helpers
 ```typescript
 export const isNotifySupported = () => {
@@ -174,8 +174,33 @@ export const isStorageSupported = () => {
                 // for example, the fetch() API.
               }, (err) => console.warn(err))
 ```
-- Add geolocation function (TODO)
-- Add storage function (TODO)
+- Add geolocation function
+```typescript
+    if (isGeoSupported()) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        console.log(position.coords.latitude, position.coords.longitude);
+        setCurrentGeo(position);
+      })
+    } else {
+      console.warn("Geolocation is not supported")
+    }
+```
+- Add storage function
+```typescript
+    if (isStorageSupported()) {
+
+      navigator.storage.persist().then((persistent) => {
+        if (persistent) {
+          console.log("Storage will not be cleared except by explicit user action");
+        } else {
+          console.log("Storage may be cleared by the UA under storage pressure.");
+        }
+      })
+      localStorage.setItem("Test", "it's a secret to everybody")
+    } else {
+      console.warn("Storage is not supported")
+    }
+```
 
 ## Learn More
 
