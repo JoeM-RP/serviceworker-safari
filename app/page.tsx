@@ -62,12 +62,28 @@ export default function Home() {
     navigator.setAppBadge && navigator.setAppBadge(count)
   }, [count])
 
-  const requestPermission = () => {
+  const requestPermission = async () => {
     try {
       if (isPwaSupported)
-        Notification.requestPermission().then((result) => {
+        Notification.requestPermission().then(async (result) => {
           if (result === "granted") {
             setIsPushGranted(true);
+
+            // Permission state *should* match "granted" after above operation, but we check again
+            // for safety. This is necessary if the subscription request is elsewhere in your flow
+            const pm = await registration?.pushManager?.permissionState()
+            if (pm === "granted")
+              // https://developer.mozilla.org/en-US/docs/Web/API/PushManager
+              // Requires HTTPS and a valid service worker to receive push notifications
+              registration?.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: "HELLOWORLD",
+              }).then((subscription) => {
+                console.log(subscription.endpoint);
+                // The push subscription details needed by the application
+                // server are now available, and can be sent to it using,
+                // for example, the fetch() API.
+              }, (err) => console.warn(err))
           } else {
             alert("We weren't allowed to send you notifications. Permission state is: " + result);
           }
