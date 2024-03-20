@@ -201,6 +201,7 @@ export const isStorageSupported = () => {
       console.warn("Storage is not supported")
     }
 ```
+- At this point, you should be able to connect to your local dev server using the sfari browser on a running simulator or on a personal device. Follow [these instructions](https://support.apple.com/guide/iphone/bookmark-favorite-webpages-iph42ab2f3a7/ios#iph4f9a47bbc) to install the PWA. Once installed, locate the app icon on your homescreen and open the app to verify the above features 
 
 ## Learn More
 
