@@ -48,7 +48,7 @@ installSerwist({
   runtimeCaching: defaultCache,
 });
 ```
-- Configure the service worker in `next.config.mjs:
+- Configure the service worker in `next.config.mjs`:
 ```javascript
 import withSerwistInit from "@serwist/next";
       
