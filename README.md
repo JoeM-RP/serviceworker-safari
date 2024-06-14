@@ -107,7 +107,7 @@ export const metadata: Metadata = {
 }
 ```
 - Restart dev server
-- In `page,tsx`, add `use client` header and add service worker registraion in a `useEffect`
+- In `page.tsx`, add `use client` header and add service worker registraion in a `useEffect`
 ```typescript
       window.serwist.register()
         .then((result: any) => setRegistration(result))
