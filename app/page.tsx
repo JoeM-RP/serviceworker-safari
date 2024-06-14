@@ -74,8 +74,9 @@ export default function Home() {
           if (result === "granted") {
             setIsPushGranted(true);
 
+            // Reload to make sure page is in the correct state with new permissions
             location.reload();
-            
+
             // Permission state *should* match "granted" after above operation, but we check again
             // for safety. This is necessary if the subscription request is elsewhere in your flow
             const pm = await registration?.pushManager?.permissionState()

@@ -128,6 +128,16 @@ export const isStorageSupported = () => {
     return typeof window !== 'undefined' && "serviceWorker" in navigator && "storage" in navigator;
 }
 ```
+- Add permission request
+```typescript
+      if (isPwaSupported)
+        Notification.requestPermission().then(async (result) => {
+          if (result === "granted") {
+            setIsPushGranted(true);
+
+            // Reload to make sure page is in the correct state with new permissions
+            location.reload();
+```
 - Add push notification function
 ```typescript
       const options = {
