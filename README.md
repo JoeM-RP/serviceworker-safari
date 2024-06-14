@@ -155,7 +155,7 @@ export const isStorageSupported = () => {
       // You must use the service worker notification to show the notification
       // e.g - new Notification(notifTitle, options) does not work on iOS
       // despite working on other platforms
-      await registration.showNotification("PWa Safari", options);
+      await registration.showNotification("PWA Safari", options);
 
       // Set the badge count
       setCount(count + 1)
@@ -171,19 +171,19 @@ export const isStorageSupported = () => {
 ```
 - Add a function to subscribe to remote notifications
 ```typescript
-            const pm = await registration?.pushManager?.permissionState()
-            if (pm === "granted")
-              // https://developer.mozilla.org/en-US/docs/Web/API/PushManager
-              // Requires HTTPS and a valid service worker to receive push notifications
-              registration?.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: "HELLOWORLD",
-              }).then((subscription) => {
-                console.log(subscription.endpoint);
-                // The push subscription details needed by the application
-                // server are now available, and can be sent to it using,
-                // for example, the fetch() API.
-              }, (err) => console.warn(err))
+    const pm = await registration?.pushManager?.permissionState()
+    if (pm === "granted")
+      // https://developer.mozilla.org/en-US/docs/Web/API/PushManager
+      // Requires HTTPS and a valid service worker to receive push notifications
+      registration?.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: "HELLOWORLD",
+      }).then((subscription) => {
+        console.log(subscription.endpoint);
+        // The push subscription details needed by the application
+        // server are now available, and can be sent to it using,
+        // for example, the fetch() API.
+      }, (err) => console.warn(err))
 ```
 - Add geolocation function
 ```typescript
