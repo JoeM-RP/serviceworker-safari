@@ -166,7 +166,8 @@ export const isStorageSupported = () => {
     navigator.clearAppBadge();
 
     // close notifcations (where supported)
-    await registration?.getNotifications().then((notifications) => { notifications.forEach((notification) => notification.close()) });
+    await registration?.getNotifications()
+      .then((notifications) => { notifications.forEach((notification) => notification.close()) });
 ```
 - Add a function to subscribe to remote notifications
 ```typescript
